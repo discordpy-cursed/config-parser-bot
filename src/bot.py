@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 import pathlib
 import logging
@@ -34,6 +35,9 @@ async def start(token: str):
         discord.utils.setup_logging()
         await bot.start(token)
 
+
 if __name__ == '__main__':
     load_dotenv()
-    asyncio.run(start(os.environ['TOKEN']))
+
+    with contextlib.suppress(KeyboardInterrupt):
+        asyncio.run(start(os.environ['TOKEN']))
