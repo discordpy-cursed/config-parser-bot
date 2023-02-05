@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
-import logging
+import tomllib
 import typing
 
 import discord
 from discord.ext import commands
+
+from config import Config
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -21,7 +24,19 @@ class Bot(commands.Bot):
             intents=discord.Intents.all(),
         )
 
-        self.overridden_on_message: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] = None
+        self._config: Config | None = None
+
+    @property
+    def config(self) -> Config:
+        if self._config:
+            return self.config
+        raise RuntimeError('Bot is not initialized yet')
+
+    @config.setter
+    def config(self, config: Config):
+        self._config = config
+
+        self.overridden_on_message: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None = None
 
     async def load_extension(self, extension: str):
         try:
@@ -45,6 +60,10 @@ class Bot(commands.Bot):
             ext = f"{'.'.join(tree)}.{file.stem}"
 
             await self.load_extension(ext)
+
+        with open('config.toml', 'rb') as fp:
+            config_payload = tomllib.load(fp)
+            self.config = Config(**config_payload)
 
     async def on_message(self, message: discord.Message):
         if self.overridden_on_message:
