@@ -38,6 +38,8 @@ class TestingBot(commands.Bot):
             log.error(f'Failed to unload extension {extension!r}', exc_info=error)
 
     async def setup_hook(self) -> None:
+        await self.load_extension("jishaku")
+
         for file in pathlib.Path('exts').glob('**/*.py'):
             *tree, _ = file.parts
             ext = f"{'.'.join(tree)}.{file.stem}"
