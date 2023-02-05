@@ -1,0 +1,15 @@
+[category.test]
+description = "foo"
+commands = ['command', 'group']
+
+[command.command]
+name = "coomand"
+description = "command description"
+aliases = ['cmd']
+
+[command.group]
+description = "group description"
+
+[command.child]
+description = "child command"
+parent = "group"
