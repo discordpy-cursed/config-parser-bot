@@ -27,9 +27,9 @@ class Bot(commands.Bot):
         self._config: Config | None = None
 
     @property
-    def config(self) -> Config:
+    def config(self):
         if self._config:
-            return self.config
+            return self._config
         raise RuntimeError('Bot is not initialized yet')
 
     @config.setter
