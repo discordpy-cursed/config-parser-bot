@@ -1,0 +1,13 @@
+[cogs.cog]
+description = "Cog description"
+
+[cogs.cog.command]
+description = "Command description"
+aliases = ["cmd", "c"]
+
+[cogs.cog.group]
+description = "Group description"
+
+[cogs.cog.child]
+description = "Child description"
+parent = "group"

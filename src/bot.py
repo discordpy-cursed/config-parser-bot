@@ -1,32 +1,30 @@
-from typing import Callable, Optional, Coroutine, Any
-import tomllib
-import asyncio
+from __future__ import annotations
+
+import logging
 import os
 import pathlib
-import logging
-from pprint import pformat
+import tomllib
+import typing
 
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 
 from config import Config
+
+if typing.TYPE_CHECKING:
+    from typing import Any, Callable, Coroutine
 
 log = logging.getLogger('bot')
 
 
 class Bot(commands.Bot):
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__(
-            command_prefix="?",
+            command_prefix=os.environ["PREFIX"],
             intents=discord.Intents.all(),
         )
 
         self.overridden_on_message: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None = None
-
-        with open('config.toml', 'rb') as fp:
-            config_payload = tomllib.load(fp)
-            self.config = Config(**config_payload)
 
     async def load_extension(self, extension: str):
         try:
@@ -48,20 +46,20 @@ class Bot(commands.Bot):
         for file in pathlib.Path('src/exts').glob('**/*.py'):
             *tree, _ = file.parts
             ext = f"{'.'.join(tree)}.{file.stem}"
+
             await self.load_extension(ext)
-            log.info(f'Loaded extension {ext!r}')
+
+        with open('config.toml', 'rb') as fp:
+            config_payload = tomllib.load(fp)
+            self.config = Config(**config_payload)
 
     async def on_message(self, message: discord.Message):
         if self.overridden_on_message:
             bot = self
 
+            try:
+                return await self.overridden_on_message(bot, message)
+            except Exception as error:
+                log.error('Failed to process overridden on_message', exc_info=error)
 
-async def start(token: str):
-    async with Bot() as bot:
-        discord.utils.setup_logging()
-        await bot.setup_hook()
-
-
-if __name__ == '__main__':
-    load_dotenv()
-    asyncio.run(start(os.environ['TOKEN']))
+        await self.process_commands(message)
