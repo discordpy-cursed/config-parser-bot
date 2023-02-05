@@ -1,9 +1,15 @@
-import discord
+from __future__ import annotations
+
+import typing
+
 from discord.ext import commands
+
+if typing.TYPE_CHECKING:
+    from src.bot import Bot
 
 
 class Basic(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command()
@@ -19,5 +25,5 @@ class Basic(commands.Cog):
         await ctx.send(str(ctx.command))
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: Bot):
     await bot.add_cog(Basic(bot))
