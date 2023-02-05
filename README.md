@@ -11,7 +11,7 @@ TOKEN="token"
 
 ```bash
 pip install -r requirements.txt
-python bot.py
+python main.py
 ```
 
 4. Have fun
