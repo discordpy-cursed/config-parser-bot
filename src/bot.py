@@ -25,11 +25,8 @@ class Bot(commands.Bot):
             intents=discord.Intents.all(),
         )
 
+        self.config: Config | None = None
         self.overridden_on_message: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None = None
-
-        with open('config.toml', 'rb') as fp:
-            config_payload = tomllib.load(fp)
-            self.config = config_payload  # Config(**config_payload)
 
     async def load_extension(self, extension: str):
         try:
@@ -63,13 +60,13 @@ class Bot(commands.Bot):
 
             await self.load_extension(ext)
 
-    async def on_message(self, message: discord.Message):
-        if self.overridden_on_message:
-            bot = self
+    # async def on_message(self, message: discord.Message):
+    #     if self.overridden_on_message:
+    #         bot = self
 
-            try:
-                return await self.overridden_on_message(bot, message)
-            except Exception as error:
-                log.error('Failed to process overridden on_message', exc_info=error)
+    #         try:
+    #             return await self.overridden_on_message(bot, message)
+    #         except Exception as error:
+    #             log.error('Failed to process overridden on_message', exc_info=error)
 
-        await self.process_commands(message)
+    #     await self.process_commands(message)
