@@ -80,14 +80,3 @@ class Bot(commands.Bot):
             ext = f"{'.'.join(tree)}.{file.stem}"
 
             await self.load_extension(ext)
-
-    # async def on_message(self, message: discord.Message):
-    #     if self._on_message:
-    #         bot = self
-
-    #         try:
-    #             return await self._on_message(bot, message)
-    #         except Exception as error:
-    #             log.error('Failed to process overridden on_message', exc_info=error)
-
-    #     await self.process_commands(message)
