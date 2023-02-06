@@ -15,10 +15,10 @@ async def on_message(self: Bot, message: discord.Message):
 
 # TODO: refactor so that `overridden_on_message` is not externally depended on
 async def setup(bot: Bot):
-    bot.on_message = on_message
+    bot.overridden_on_message = on_message
 
 
 async def teardown(bot: Bot):
     disable_overridden_on_message = None
 
-    bot.on_message = disable_overridden_on_message
+    bot.overridden_on_message = disable_overridden_on_message
