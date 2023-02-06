@@ -10,7 +10,7 @@ import typing
 import discord
 from discord.ext import commands
 
-from config import Config
+from src.config import Config
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -29,7 +29,7 @@ class Bot(commands.Bot):
 
         with open('config.toml', 'rb') as fp:
             config_payload = tomllib.load(fp)
-            self.config = Config(**config_payload)
+            self.config = config_payload  # Config(**config_payload)
 
     async def load_extension(self, extension: str):
         try:
