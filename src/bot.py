@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import pathlib
@@ -45,7 +46,16 @@ class Bot(commands.Bot):
             log.error(f'Failed to unload extension {extension!r}', exc_info=error)
 
     async def setup_hook(self):
-        await self.load_extension("jishaku")
+        """
+        I want to make it so if Jishaku exists, I only import it based on the config file.
+
+        The first part is easy as shown below, the second part relies on the config actually being initialised in the first place.
+        Wondering if there's a need for an entry point in code.
+        """
+        with contextlib.suppress(commands.ExtensionNotFound):
+            # TODO: replace with config value
+            if True:
+                await self.load_extension("jishaku")
 
         for file in pathlib.Path('src/exts').glob('**/*.py'):
             *tree, _ = file.parts
