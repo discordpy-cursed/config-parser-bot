@@ -25,8 +25,29 @@ class Bot(commands.Bot):
             intents=discord.Intents.all(),
         )
 
+        self._on_message: Callable[[discord.Message], Coroutine[Any, Any, None]] | None = None
         self.config: Config | None = None
-        self.overridden_on_message: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None = None
+
+    @property
+    def on_message(self):
+        if self._on_message:
+            return self._on_message
+
+        return super().on_message
+
+    @on_message.setter
+    def on_message(self, coro: Callable[[discord.Message], Coroutine[Any, Any, None]] | None):
+        if coro is None:
+            self._on_message = None
+
+            return
+
+        bot = self
+
+        async def wrapped(message: discord.Message):
+            await coro(bot, message)
+
+        self._on_message = wrapped
 
     async def load_extension(self, extension: str):
         try:
@@ -60,13 +81,13 @@ class Bot(commands.Bot):
 
             await self.load_extension(ext)
 
-    async def on_message(self, message: discord.Message):
-        if self.overridden_on_message:
-            bot = self
+    # async def on_message(self, message: discord.Message):
+    #     if self._on_message:
+    #         bot = self
 
-            try:
-                return await self.overridden_on_message(bot, message)
-            except Exception as error:
-                log.error('Failed to process overridden on_message', exc_info=error)
+    #         try:
+    #             return await self._on_message(bot, message)
+    #         except Exception as error:
+    #             log.error('Failed to process overridden on_message', exc_info=error)
 
-        await self.process_commands(message)
+    #     await self.process_commands(message)
