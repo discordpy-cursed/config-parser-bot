@@ -1,6 +1,5 @@
 [category.test]
 description = "foo"
-commands = ['command', 'group']
 
 [command.command]
 name = "coomand"
@@ -12,4 +11,13 @@ description = "group description"
 
 [command.child]
 description = "child command"
+enabled = false
 parent = "group"
+
+[default-values.command]
+enabled = true
+hidden = false
+description = "No description provided..."
+
+[default-values.category]
+description = 'No description provided...'
