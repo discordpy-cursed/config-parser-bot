@@ -26,6 +26,10 @@ class Bot(commands.Bot):
 
         self.overridden_on_message: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None = None
 
+        with open('config.toml', 'rb') as fp:
+            config_payload = tomllib.load(fp)
+            self.config = Config(**config_payload)
+
     async def load_extension(self, extension: str):
         try:
             await super().load_extension(extension)
@@ -48,10 +52,6 @@ class Bot(commands.Bot):
             ext = f"{'.'.join(tree)}.{file.stem}"
 
             await self.load_extension(ext)
-
-        with open('config.toml', 'rb') as fp:
-            config_payload = tomllib.load(fp)
-            self.config = Config(**config_payload)
 
     async def on_message(self, message: discord.Message):
         if self.overridden_on_message:
