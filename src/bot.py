@@ -11,7 +11,7 @@ from discord.ext import commands
 
 # TODO: this looks like shit, change it at some point
 from src.commands import process_command
-from src.config import Command, Config
+from src.config import Config
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -65,12 +65,6 @@ class Bot(commands.Bot):
             log.error(f'Failed to unload extension {extension!r}', exc_info=error)
 
     async def setup_hook(self):
-        """
-        I want to make it so if Jishaku exists, I only import it based on the config file.
-
-        The first part is easy as shown below, the second part relies on the config actually being initialised in the first place.
-        Wondering if there's a need for an entry point in code.
-        """
         with contextlib.suppress(commands.ExtensionNotFound):
             # TODO: replace with config value
             if True:
