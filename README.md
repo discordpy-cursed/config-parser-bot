@@ -3,6 +3,7 @@
 1. Make a `.env` file because they're cool, example schema [here](https://github.com/discordpy-cursed/config-parser-bot/blob/main/.example.env)
 
 ```bash
+PREFIX="?"
 TOKEN="token"
 ```
 
