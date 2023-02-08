@@ -9,10 +9,9 @@ import typing
 import discord
 from discord.ext import commands
 
-from src.config import Command, Config
-
 # TODO: this looks like shit, change it at some point
 from src.commands import process_command
+from src.config import Command, Config
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
