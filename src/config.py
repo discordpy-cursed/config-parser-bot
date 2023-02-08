@@ -11,8 +11,11 @@ class Category(BaseModel):
 class Command(BaseModel):
     name: Optional[str]
     description: Optional[str]
-    aliases: Optional[list[str]]
+    aliases: Optional[list[str]] = []
     parent: Optional[str]
+    hybrid: bool = False
+    hidden: bool = False
+    disabled: bool = True
 
 
 class Config(BaseModel):

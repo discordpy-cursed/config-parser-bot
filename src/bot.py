@@ -4,13 +4,15 @@ import contextlib
 import logging
 import os
 import pathlib
-import tomllib
 import typing
 
 import discord
 from discord.ext import commands
 
-from src.config import Config
+from src.config import Command, Config
+
+# TODO: this looks like shit, change it at some point
+from src.commands import process_command
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -60,6 +62,8 @@ class Bot(commands.Bot):
 
             await self.load_extension(ext)
 
+        await self.process_config()
+
     async def on_message(self, message: discord.Message):
         if self.overridden_on_message:
             bot = self
@@ -70,3 +74,10 @@ class Bot(commands.Bot):
                 log.error('Failed to process overridden on_message', exc_info=error)
 
         await self.process_commands(message)
+
+    async def process_config(self):
+        if not self.config:
+            return
+
+        for name, payload in self.config.command.items():
+            await process_command(bot=self, name=name, payload=payload)

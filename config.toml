@@ -3,22 +3,19 @@ description = "foo"
 commands = ['command', 'group']
 
 [command.command]
-name = "coomand"
-description = "command description"
-aliases = ['cmd']
+hybrid=true
+name = "coomandfuckyou"
+description = "command description woo hoo!"
+aliases = ['cmd', 'hiliz']
 
 [command.group]
+hybrid=true
+name='assgroup'
 description = "group description"
+parent='command'
 
 [command.child]
+hybrid=true
+name='thefuckingchild'
 description = "child command"
-enabled = false
 parent = "group"
-
-[default-values.command]
-enabled = true
-hidden = false
-description = "No description provided..."
-
-[default-values.category]
-description = 'No description provided...'
