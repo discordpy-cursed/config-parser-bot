@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import typing
+from typing import Any, Callable, Coroutine
 
-from discord.ext import commands
+from src.bot import Bot
 
-if typing.TYPE_CHECKING:
-    from typing import Any, Callable, Coroutine
-
-    EventHandler = Callable[[commands.Bot, *Any], Coroutine[Any, Any, Any]]
+EventHandler = Callable[[Bot, *Any], Coroutine[Any, Any, Any]]

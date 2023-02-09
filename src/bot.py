@@ -9,9 +9,8 @@ from typing import overload
 import discord
 from discord.ext import commands
 
-# TODO: this looks like shit, change it at some point
-from src import Config
 from src.commands import process_command
+from src.config import Config
 from src.exts.prefix import command_prefix
 
 if typing.TYPE_CHECKING:

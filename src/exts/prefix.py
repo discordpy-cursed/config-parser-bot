@@ -1,3 +1,4 @@
+# pyright: reportUnusedVariable=false, reportUnusedExpression=false
 from __future__ import annotations
 
 import os
@@ -11,7 +12,7 @@ if typing.TYPE_CHECKING:
 STATIC_FALLBACK_PREFIX = "?"
 
 
-async def command_prefix(bot: Bot, message: discord.Message) -> str | tuple[str]:
+async def command_prefix(*_) -> str | tuple[str]:
     return os.environ.get("PREFIX", STATIC_FALLBACK_PREFIX)
 
 

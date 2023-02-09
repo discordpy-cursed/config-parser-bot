@@ -5,8 +5,8 @@ import os
 import discord
 from dotenv import load_dotenv
 
-from src import Bot
 from src import config
+from src.bot import Bot
 
 
 async def main(token: str):
