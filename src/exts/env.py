@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
 
 
-async def setup(bot):
+async def setup(_):
     load_dotenv()
