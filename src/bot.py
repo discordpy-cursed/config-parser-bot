@@ -11,7 +11,7 @@ from discord.ext import commands
 
 # TODO: this looks like shit, change it at some point
 from src.commands import process_command
-from src.config import Command, Config
+from src.config import Config
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -37,7 +37,7 @@ class Bot(commands.Bot):
         return super().on_message
 
     @on_message.setter
-    def on_message(self, coro: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None):
+    def on_message(self, coro: Callable[[Bot, discord.Message], Coroutine[Any, Any, None]] | None):  # type: ignore
         if coro is None:
             self._on_message = None
 
@@ -50,19 +50,19 @@ class Bot(commands.Bot):
 
         self._on_message = wrapped
 
-    async def load_extension(self, extension: str):
+    async def load_extension(self, name: str, *, package: str | None = None):
         try:
-            await super().load_extension(extension)
-            log.info(f'Loaded extension {extension!r}')
+            await super().load_extension(name, package=package)
+            log.info(f'Loaded extension {name!r}')
         except Exception as error:
-            log.error(f'Failed to load extension {extension!r}', exc_info=error)
+            log.error(f'Failed to load extension {name!r}', exc_info=error)
 
-    async def unload_extension(self, extension: str):
+    async def unload_extension(self, name: str, *, package: str | None = None):
         try:
-            await super().unload_extension(extension)
-            log.info(f'Unloaded extension {extension!r}')
+            await super().unload_extension(name)
+            log.info(f'Unloaded extension {name!r}')
         except Exception as error:
-            log.error(f'Failed to unload extension {extension!r}', exc_info=error)
+            log.error(f'Failed to unload extension {name!r}', exc_info=error)
 
     async def setup_hook(self):
         """

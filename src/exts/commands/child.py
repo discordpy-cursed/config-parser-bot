@@ -4,12 +4,13 @@ import typing
 
 if typing.TYPE_CHECKING:
     from src.bot import Bot
+    from src.typings import Context
 
 from discord.ext import commands
 
 
 @commands.command()
-async def child(ctx: commands.Context):
+async def child(ctx: Context):
     await ctx.send(str(ctx.command))
 
 
