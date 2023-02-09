@@ -45,25 +45,25 @@ class Bot(commands.Bot):
         cls = commands.HybridGroup if is_parent else commands.HybridCommand
 
         if not self.config:
-            log.warning(f'No config was found, unable to process command {name}')
+            log.warning(f'No config was found, unable to process command {name!r}')
 
             return
 
         command_found = self.find_command(name, payload)
 
         if not command_found:
-            return log.warning(f'Command "{name}" not found from config')
+            return log.warning(f'Command {name!r} not found from config')
 
         self.remove_command(command_found.qualified_name)
 
         new_command = cls(
             command_found.callback,
             aliases=payload.aliases,
-            help=payload.description,
-            name=payload.name or name,
-            invoke_without_command=True,
             disabled=payload.disabled,
+            help=payload.description,
             hidden=payload.hidden,
+            invoke_without_command=True,
+            name=payload.name or name,
             with_app_command=payload.hybrid,
         )
 
@@ -99,7 +99,7 @@ class Bot(commands.Bot):
 
         setattr(self, name, abstract_bot_parameter)
         self.event_handlers.setdefault(extension, handler)
-        log.info(f"Loaded event {name}")
+        log.info(f"Loaded event {name!r}")
 
     async def default_on_message(self, message: discord.Message):
         await self.process_commands(message)
@@ -121,7 +121,7 @@ class Bot(commands.Bot):
         if special_case_on_message_event_for_hmr:
             self.on_message = self.default_on_message
 
-        log.info(f"Unloaded event {name}")
+        log.info(f"Unloaded event {name!r}")
 
     async def load_extension(self, extension: str):
         try:
