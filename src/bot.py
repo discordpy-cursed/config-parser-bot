@@ -21,6 +21,10 @@ log = logging.getLogger('bot')
 
 
 # TODO: bot HMR
+# TODO: test extension reloading
+# TODO: test command loading/unloading
+# TODO: add shorter way to resolve names when loading/unload extensions (i.e. from name via parsing tails of paths)
+# TODO: repair workflow - avoid checks, format directly
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -89,7 +93,7 @@ class Bot(commands.Bot):
         handler_found = self.event_handlers.get(extension, False)
 
         if handler_found:
-            # TODO: raise error
+            # FIXME: raise error
             return
 
         async def abstract_bot_parameter(*args, **kwargs):
@@ -110,7 +114,7 @@ class Bot(commands.Bot):
         handler_found = self.event_handlers.get(extension, False)
 
         if not handler_found:
-            # TODO: raise error here
+            # FIXME: raise error
             return
 
         special_case_on_message_event_for_hmr = not self.on_message
