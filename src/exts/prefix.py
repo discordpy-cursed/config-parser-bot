@@ -1,10 +1,7 @@
-# pyright: reportUnusedVariable=false, reportUnusedExpression=false
 from __future__ import annotations
 
 import os
 import typing
-
-import discord
 
 if typing.TYPE_CHECKING:
     from src.bot import Bot
