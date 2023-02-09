@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import logging
 import pathlib
@@ -21,8 +20,8 @@ if typing.TYPE_CHECKING:
     EventHandler = Callable[[commands.Bot, *Any], Coroutine[Any, Any, Any]]
     Listener = Callable[..., Coroutine[Any, Any, Any]]
 
-
 log = logging.getLogger('bot')
+
 
 # TODO: bot HMR
 class Bot(commands.Bot):
