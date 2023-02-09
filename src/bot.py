@@ -4,14 +4,12 @@ import contextlib
 import logging
 import pathlib
 import typing
-from typing import overload
 
 import discord
 from discord.ext import commands
 
-from src.commands import process_command
-from src.config import Config
-from src.exts.prefix import command_prefix
+from src.config import Command, Config
+from src.constants import STATIC_FALLBACK_PREFIX
 
 if typing.TYPE_CHECKING:
     from typing import Any, Callable, Coroutine
@@ -26,63 +24,104 @@ log = logging.getLogger('bot')
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=command_prefix,
+            command_prefix=STATIC_FALLBACK_PREFIX,
             intents=discord.Intents.all(),
         )
 
         self.config: Config | None = None
-        self.events: dict[str, set[EventHandler]] = {}
+        self.event_handlers: dict[str, EventHandler] = {}
 
-    @overload
-    def add_event(self, callback: EventHandler):
-        ...
+    # TODO: when typings are merged, replace Command | Group with Invokable
+    def find_command(self, name: str, payload: Command) -> commands.Command | commands.Group | None:
+        for command in self.walk_commands():
+            if command.name not in {name, payload.name}:
+                continue
 
-    @overload
-    def add_event(self, name: str, callback: EventHandler):
-        ...
+            return command
 
-    def add_event(self, name_or_handler: str | EventHandler, callback: EventHandler | None = None):
-        name: str = name_or_handler
-        handler: EventHandler | None = callback
+    async def handle_extension_as_command(
+        self, *, name: str, payload: Command, is_parent: bool = False
+    ) -> commands.Command | commands.Group | None:
+        cls = commands.HybridGroup if is_parent else commands.HybridCommand
 
-        if callback is None:
-            handler = name_or_handler
-            name = handler.__name__
+        if not self.config:
+            log.warning(f'No config was found, unable to process command {name}')
 
-        events = self.events.setdefault(name, set())
+            return
 
-        events.add(handler)
+        command_found = self.find_command(name, payload)
 
-    @overload
-    def remove_event(self, name: str):
-        ...
+        if not command_found:
+            return log.warning(f'Command "{name}" not found from config')
 
-    @overload
+        self.remove_command(command_found.qualified_name)
+
+        new_command = cls(
+            command_found.callback,
+            aliases=payload.aliases,
+            help=payload.description,
+            name=payload.name or name,
+            invoke_without_command=True,
+            disabled=payload.disabled,
+            hidden=payload.hidden,
+            with_app_command=payload.hybrid,
+        )
+
+        if payload.parent:
+            parent = await self.handle_extension_as_command(
+                name=f"{payload.parent}".strip(),
+                payload=self.config.command[payload.parent],
+                is_parent=True,
+            )
+
+            if isinstance(parent, commands.Group):
+                parent.add_command(new_command)
+
+        else:
+            self.add_command(new_command)
+
+        return new_command
+
+    def add_event(self, handler: EventHandler):
+        name = handler.__name__
+        extension = handler.__module__
+        bot = self
+        handler_found = self.event_handlers.get(extension, False)
+
+        if handler_found:
+            # TODO: raise error
+            return
+
+        async def abstract_bot_parameter(*args, **kwargs):
+            return await handler(bot, *args, **kwargs)
+
+        abstract_bot_parameter.__name__ = name
+
+        setattr(self, name, abstract_bot_parameter)
+        self.event_handlers.setdefault(extension, handler)
+        log.info(f"Loaded event {name}")
+
+    async def default_on_message(self, message: discord.Message):
+        await self.process_commands(message)
+
     def remove_event(self, handler: EventHandler):
-        ...
+        name = handler.__name__
+        extension = handler.__module__
+        handler_found = self.event_handlers.get(extension, False)
 
-    # TODO: rewrite documentation
-    def remove_event(self, name_or_handler: str | EventHandler):
-        """
-        When given a string, it is treated as being passed an event and all events associated with it are removed.
-        When given an event handler/callback, it is sought for and removed.
-        """
-        if not isinstance(name_or_handler, str):
-            for handlers in self.events.values():
-                if name_or_handler not in handlers:
-                    continue
-
-                handlers.remove(name_or_handler)
-
+        if not handler_found:
+            # TODO: raise error here
             return
 
-        name = name_or_handler if name_or_handler.startswith("on_") else f"on_{name_or_handler}"
-        events_found = self.events.get(name, False)
+        special_case_on_message_event_for_hmr = not self.on_message
+        del self.event_handlers[extension]
 
-        if not events_found:
-            return
+        delattr(self, name)
 
-        del self.events[name]
+        if special_case_on_message_event_for_hmr:
+            self.on_message = self.default_on_message
+
+        log.info(f"Unloaded event {name}")
 
     async def load_extension(self, extension: str):
         try:
@@ -91,26 +130,21 @@ class Bot(commands.Bot):
         except Exception as error:
             log.error(f'Failed to load extension {extension!r}', exc_info=error)
 
-    def handle_unloading_event_cleanup(self, extension: str):
-        for handlers in self.events.values():
-            from_extension = [handler for handler in handlers if handler.__module__ == extension]
-
-            for callback in from_extension:
-                handlers.remove(callback)
-
-    async def reload_extension(self, name: str) -> None:
-        return await super().reload_extension(name)
-
     async def unload_extension(self, extension: str):
         try:
             await super().unload_extension(extension)
+
+            event_handler_found = self.event_handlers.get(extension, False)
+
+            if event_handler_found:
+                self.remove_event(event_handler_found)
+
             log.info(f'Unloaded extension {extension!r}')
         except Exception as error:
             log.error(f'Failed to unload extension {extension!r}', exc_info=error)
 
-    async def _remove_module_references(self, name: str) -> None:
-        await super()._remove_module_references(name)
-        self.handle_unloading_event_cleanup(name)
+    async def reload_extension(self, name: str) -> None:
+        return await super().reload_extension(name)
 
     async def setup_hook(self):
         with contextlib.suppress(commands.ExtensionNotFound):
@@ -131,22 +165,4 @@ class Bot(commands.Bot):
             return
 
         for name, payload in self.config.command.items():
-            await process_command(bot=self, name=name, payload=payload)
-
-    # TODO: come up with a better name
-    def defer_to_event_handlers_en_masse(self, method: str, event_handlers: set[EventHandler], *args, **kwargs):
-        bot = self
-
-        for callback in event_handlers:
-            # https://github.com/Rapptz/discord.py/blob/master/discord/client.py#L450-L499
-            coro = self._run_event(callback, method, bot, *args, **kwargs)
-
-            self.loop.create_task(coro, name=f"bot: {method}")
-
-    def _schedule_event(self, callback: Listener, method: str, *args: Any, **kwargs: Any):
-        event_handlers_found = self.events.get(method, False)
-
-        if not event_handlers_found:
-            return super()._schedule_event(callback, method, *args, **kwargs)
-
-        self.defer_to_event_handlers_en_masse(method, event_handlers_found, *args, **kwargs)
+            await self.handle_extension_as_command(name=name, payload=payload)
