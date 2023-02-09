@@ -143,8 +143,9 @@ class Bot(commands.Bot):
         except Exception as error:
             log.error(f'Failed to unload extension {extension!r}', exc_info=error)
 
-    async def reload_extension(self, name: str) -> None:
-        return await super().reload_extension(name)
+    async def reload_extension(self, name: str):
+        await self.unload_extension(name)
+        await self.load_extension(name)
 
     async def setup_hook(self):
         with contextlib.suppress(commands.ExtensionNotFound):
