@@ -8,12 +8,15 @@ from discord.ext import commands
 from src.config import Command
 
 if typing.TYPE_CHECKING:
+    from typing import Type
+
     from src.bot import Bot
+    from src.typings import HybridCommandT, HybridGroupT, Invokable
 
 log = logging.getLogger('bot')
 
 
-def find_command(bot: Bot, name: str, payload: Command) -> commands.Command | commands.Group | None:
+def find_command(bot: Bot, name: str, payload: Command) -> Invokable | None:
     for command in bot.walk_commands():
         if command.name not in {name, payload.name}:
             continue
@@ -21,10 +24,8 @@ def find_command(bot: Bot, name: str, payload: Command) -> commands.Command | co
         return command
 
 
-async def process_command(
-    *, bot, name: str, payload: Command, is_parent: bool = False
-) -> commands.Command | commands.Group | None:
-    cls = commands.HybridGroup if is_parent else commands.HybridCommand
+async def process_command(*, bot: Bot, name: str, payload: Command, is_parent: bool = False) -> Invokable | None:
+    cls: Type[HybridCommandT] | Type[HybridGroupT] = commands.HybridGroup if is_parent else commands.HybridCommand
 
     if not bot.config:
         log.warning(f'No config was found, unable to process command {name}')

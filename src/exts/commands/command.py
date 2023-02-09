@@ -4,18 +4,15 @@ import typing
 
 if typing.TYPE_CHECKING:
     from src.bot import Bot
+    from src.typings import Context
 
 from discord.ext import commands
 
 
 @commands.command()
-async def command(ctx: commands.Context):
+async def command(ctx: Context):
     await ctx.send(str(ctx.command))
 
 
 async def setup(bot: Bot):
     bot.add_command(command)
-
-
-# async def teardown(bot: Bot):
-#     bot.remove_command(command.name)
