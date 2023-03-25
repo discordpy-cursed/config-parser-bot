@@ -20,9 +20,6 @@ if typing.TYPE_CHECKING:
 log = logging.getLogger('bot')
 
 
-# TODO: bot HMR
-# TODO: test extension reloading
-# TODO: test command loading/unloading
 # TODO: add shorter way to resolve names when loading/unload extensions (i.e. from name via parsing tails of paths)
 # TODO: repair workflow - avoid checks, format directly
 class Bot(commands.Bot):
