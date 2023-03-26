@@ -1,19 +1,18 @@
-from __future__ import annotations
-
 import functools
-import typing
 
-if typing.TYPE_CHECKING:
-    from src.typings import EventHandler
+from discord.utils import MISSING
+
+from src.typings import EventHandler
 
 
-def rename(name: str):
+def listen(name: str = MISSING):
     def wrapper(handler: EventHandler):
         @functools.wraps(handler)
         async def wrapped(*args, **kwargs):
             return await handler(*args, **kwargs)
 
-        wrapped.__name__ = name
+        # https://github.com/Rapptz/discord.py/blob/bb7668f8a58ba4b8161edeb77f8936ff807d6537/discord/ext/commands/bot.py#L602-L628
+        wrapped.__name__ = wrapped.__name__ if name is MISSING else name
 
         return wrapped
 
