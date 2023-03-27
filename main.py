@@ -8,7 +8,7 @@ from watchdog.observers import Observer
 
 from src import config
 from src.bot import Bot
-from src.hmr import HotModuleReloader
+from src.exts.hmr import HotModuleReloader
 
 
 async def main(token: str):

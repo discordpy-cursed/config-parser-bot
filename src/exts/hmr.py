@@ -14,13 +14,13 @@ from watchdog.events import FileModifiedEvent, FileSystemEvent, FileSystemEventH
 from watchdog.observers import Observer
 
 if typing.TYPE_CHECKING:
-    from src.bot import Bot
+    from src.bot import BaseBot
 
 log = logging.getLogger("HMR")
 
 
 class FileEditEventHandler(FileSystemEventHandler):
-    def __init__(self, bot: Bot, *, quiet: bool = False):
+    def __init__(self, bot: BaseBot, *, quiet: bool = False):
         self.bot = bot
         self.quiet = quiet
 
@@ -87,7 +87,7 @@ class FileEditEventHandler(FileSystemEventHandler):
 
 
 class HotModuleReloader(Observer):
-    def start(self, bot: Bot):
+    def start(self, bot: BaseBot):
         hot_module_reloader = FileEditEventHandler(bot)
 
         self.schedule(hot_module_reloader, path="./src", recursive=True)
@@ -98,11 +98,11 @@ class HotModuleReloader(Observer):
         self.join()
 
 
-def setup(bot: Bot):
+async def setup(bot: BaseBot):
     bot.hot_module_reloader = HotModuleReloader(bot)
 
 
-def teardown(bot: Bot):
+async def teardown(bot: BaseBot):
     bot.hot_module_reloader.stop()
 
     bot.hot_module_reloader = None
