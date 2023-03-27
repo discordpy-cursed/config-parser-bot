@@ -40,7 +40,7 @@ class FileEditEventHandler(FileSystemEventHandler):
         try:
             super().dispatch(event)
         except Exception as error:
-            log.error(f'Watchdog {event.event_type!r} event failed:', exc_info=error)
+            log.error(f'Ignoring Watchdog exception on event {event.event_type!r}:', exc_info=error)
 
     def to_module_path(self, filepath: str) -> str:
         return filepath.replace("./", "", 1).replace(".py", "", 1).replace("/", ".")
