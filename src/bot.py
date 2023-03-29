@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import importlib
 import inspect
 import logging
+import os
 import pathlib
 import sys
 import types
 import typing
 
 import discord
-from discord.ext import commands
+import watchfiles
+from discord.ext import commands, tasks
 from discord.utils import MISSING
 
 from src.config import Command, Config
@@ -19,29 +22,26 @@ from src.errors import ModuleAlreadyLoaded, ModuleError, ModuleFailed, ModuleNot
 
 if typing.TYPE_CHECKING:
     from importlib.machinery import ModuleSpec
-    from typing import Any, Callable, Coroutine
+    from typing import Any
 
     from src.hmr import HotModuleReloader
-    from src.typings import EventHandler
-
-    Listener = Callable[..., Coroutine[Any, Any, Any]]
+    from src.typings import EventHandler, Listener
 
 # TODO: create multiple loggers to differentiate between loading extensions
 # natively vs with Jishaku vs with custom logic
 log = logging.getLogger('bot')
+reloading_event = asyncio.Event()
 
 
 # TODO: add shorter way to resolve names when loading/unload extensions (i.e. from name via parsing tails of paths)
-# TODO: repair workflow - avoid checks, format directly
+# TODO: add flake8/pylint to warn for large indentation levels
 class Bot(commands.Bot):
-    def __init__(self):
-        super().__init__(
-            command_prefix=STATIC_FALLBACK_PREFIX,
-            intents=discord.Intents.all(),
-        )
+    def __init__(self, *args, **kwargs):
+        commands.Bot.__init__(self, command_prefix=STATIC_FALLBACK_PREFIX, intents=discord.Intents.all(), *args, **kwargs)
 
         self.config: Config | None = None
         self.hot_module_reloader: HotModuleReloader | None = None
+        self.queue: asyncio.LifoQueue | None = None
         self.event_handlers: dict[str, EventHandler] = {}
         self.wrapped_listeners: dict[str, list[Listener]] = {}
 
@@ -99,26 +99,22 @@ class Bot(commands.Bot):
     def on_module_error(self, error: ModuleError):
         log.error(error.message, exc_info=error)
 
-        raise error
-
-    def load_module(self, key: str, *, spec: ModuleSpec, module: types.ModuleType):
-        module_already_loaded = sys.modules.get(key, False)
+    def load_module(self, module_path: str, *, spec: ModuleSpec, module: types.ModuleType):
+        module_already_loaded = sys.modules.get(module_path, False)
 
         if module_already_loaded:
-            raise ModuleAlreadyLoaded(key)
+            raise ModuleAlreadyLoaded(module_path)
 
-        sys.modules[key] = module
+        sys.modules[module_path] = module
 
         try:
             spec.loader.exec_module(module)
         except Exception as error:
-            new_error = ModuleFailed(f"Failed to load module {key!r}", module=module, spec=spec, original=error)
+            raise ModuleFailed(f"Failed to load module {module_path!r}", module=module, spec=spec, original=error)
 
-            self.on_module_error(new_error)
-
-    def unload_module(self, key: str, *, spec: ModuleSpec, module: types.ModuleType):
+    def unload_module(self, module_path: str, *, spec: ModuleSpec, module: types.ModuleType):
         try:
-            del sys.modules[key]
+            del sys.modules[module_path]
 
             for imported_module_name in sys.modules.keys():
                 is_submodule = imported_module_name.startswith(f"{module.__name__}.")
@@ -126,13 +122,17 @@ class Bot(commands.Bot):
                 if is_submodule:
                     del sys.modules[imported_module_name]
         except KeyError:
-            new_error = ModuleNotFound(f"Failed to unload module {key!r}", module=module, spec=spec)
+            raise ModuleNotFound(f"Failed to unload module {module_path!r}", module=module, spec=spec)
 
-            self.on_module_error(new_error)
+    def reload_module(self, module_path: str):
+        spec = importlib.util.find_spec(module_path)
+        module = importlib.util.module_from_spec(spec)
 
-    def reload_module(self, key: str, *, spec: ModuleSpec, module: types.ModuleType):
-        self.unload_module(key, spec=spec, module=module)
-        self.load_module(key, spec=spec, module=module)
+        try:
+            self.unload_module(module_path, spec=spec, module=module)
+            self.load_module(module_path, spec=spec, module=module)
+        except ModuleError as error:
+            self.on_module_error(error)
 
     def add_event(self, handler: EventHandler):
         name = handler.__name__
@@ -246,6 +246,7 @@ class Bot(commands.Bot):
             if True:
                 await self.load_extension("jishaku")
 
+        # TODO: refactor
         for file in pathlib.Path('src/exts').glob('**/*.py'):
             *tree, _ = file.parts
             ext = f"{'.'.join(tree)}.{file.stem}"
@@ -254,9 +255,25 @@ class Bot(commands.Bot):
 
         await self.process_config()
 
+        # self.loop.create_task(self.hmr_request_listener())
+
     async def process_config(self):
         if not self.config:
             return
 
         for name, payload in self.config.command.items():
-            await self.handle_extension_as_command(name=name, payload=payload)  #
+            await self.handle_extension_as_command(name=name, payload=payload)
+
+    # async def setup_hmr(self, request_queue: asyncio.LifoQueue):
+    #     bot = self
+    #     self.queue = request_queue
+    #     self.hot_module_reloader = HotModuleReloader(bot, request_queue)
+
+    #     self.hot_module_reloader.start()
+    #     self.hmr_request_listener.start()
+
+    # async def teardown_hmr(self):
+    #     self.hmr_request_listener.stop()
+    #     self.hot_module_reloader.stop()
+
+    #     self.hot_module_reloader = None

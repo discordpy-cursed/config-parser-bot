@@ -5,3 +5,4 @@ from typing import Any, Callable, Coroutine, TypeAlias
 from src.bot import Bot
 
 EventHandler: TypeAlias = Callable[[Bot, *Any], Coroutine[Any, Any, Any]]
+Listener: TypeAlias = Callable[..., Coroutine[Any, Any, Any]]

@@ -4,28 +4,22 @@ import os
 
 import discord
 from dotenv import load_dotenv
-from watchdog.observers import Observer
 
-from src import config
+from src import config, hmr
 from src.bot import Bot
-from src.exts.hmr import HotModuleReloader
 
 
-async def main(token: str):
-    hot_module_reloader = HotModuleReloader()
+async def main():
+    token = os.environ['TOKEN']
 
     async with Bot() as bot:
-        discord.utils.setup_logging()
-
-        hot_module_reloader.start(bot)
-        await bot.start(token)
-
-    hot_module_reloader.stop()
+        await asyncio.gather(bot.start(token), hmr.start(bot))
 
 
 if __name__ == '__main__':
     load_dotenv()
     config.assert_prerequisites()
+    discord.utils.setup_logging()
 
-    with contextlib.suppress(KeyboardInterrupt, asyncio.CancelledError):
-        asyncio.run(main(os.environ['TOKEN']))
+    with contextlib.suppress(KeyboardInterrupt, RuntimeError, asyncio.CancelledError):
+        asyncio.run(main())
