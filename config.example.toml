@@ -1,13 +1,25 @@
-[cogs.cog]
-description = "Cog description"
+[category.test]
+description = "foo"
+commands = ['command', 'group']
 
-[cogs.cog.command]
-description = "Command description"
-aliases = ["cmd", "c"]
+[command.command]
+name = "coomand"
+description = "command description"
+aliases = ['cmd']
 
-[cogs.cog.group]
-description = "Group description"
+[command.group]
+description = "group description"
 
-[cogs.cog.child]
-description = "Child description"
+[command.child]
+description = "child command"
+enabled = false
 parent = "group"
+
+[default-values.command]
+enabled = true
+hidden = false
+description = "No description provided..."
+
+[default-values.category]
+description = 'No description provided...'
+

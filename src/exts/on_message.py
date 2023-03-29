@@ -9,16 +9,15 @@ if typing.TYPE_CHECKING:
     from src.bot import Bot
 
 
-async def on_message(self: Bot, message: discord.Message):
-    await self.process_commands(message)
+async def on_message(bot: Bot, message: discord.Message):
+    await bot.process_commands(message)
 
 
-# TODO: refactor so that `overridden_on_message` is not externally depended on
 async def setup(bot: Bot):
-    bot.overridden_on_message = on_message
+    bot.on_message = on_message
 
 
 async def teardown(bot: Bot):
     disable_overridden_on_message = None
 
-    bot.overridden_on_message = disable_overridden_on_message
+    bot.on_message = disable_overridden_on_message
