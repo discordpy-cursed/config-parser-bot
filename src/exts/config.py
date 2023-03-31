@@ -3,7 +3,7 @@ from __future__ import annotations
 import tomllib
 import typing
 
-from src.config import Config
+from src import Config
 
 if typing.TYPE_CHECKING:
     from src.bot import Bot

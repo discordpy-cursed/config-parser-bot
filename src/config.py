@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Optional
 
 from pydantic import BaseModel
@@ -21,3 +22,7 @@ class Command(BaseModel):
 class Config(BaseModel):
     category: Dict[str, Category]
     command: Dict[str, Command]
+
+
+def assert_prerequisites():
+    assert os.environ.get("PREFIX", False), "required env var PREFIX not set"

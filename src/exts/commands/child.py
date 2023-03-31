@@ -15,7 +15,3 @@ async def child(ctx: commands.Context):
 
 async def setup(bot: Bot):
     bot.add_command(child)
-
-
-# async def teardown(bot: Bot):
-#     bot.remove_command(command.name)
