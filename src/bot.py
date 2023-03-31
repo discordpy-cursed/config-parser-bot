@@ -5,15 +5,13 @@ import contextlib
 import importlib
 import inspect
 import logging
-import os
 import pathlib
 import sys
 import types
 import typing
 
 import discord
-import watchfiles
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord.utils import MISSING
 
 from src.config import Command, Config
@@ -21,10 +19,10 @@ from src.constants import STATIC_FALLBACK_PREFIX
 from src.errors import ModuleAlreadyLoaded, ModuleError, ModuleFailed, ModuleNotFound
 
 if typing.TYPE_CHECKING:
+    import importlib.util
     from importlib.machinery import ModuleSpec
     from typing import Any
 
-    from src.hmr import HotModuleReloader
     from src.typings import EventHandler, Listener
 
 # TODO: create multiple loggers to differentiate between loading extensions
@@ -40,7 +38,6 @@ class Bot(commands.Bot):
         commands.Bot.__init__(self, command_prefix=STATIC_FALLBACK_PREFIX, intents=discord.Intents.all(), *args, **kwargs)
 
         self.config: Config | None = None
-        self.hot_module_reloader: HotModuleReloader | None = None
         self.queue: asyncio.LifoQueue | None = None
         self.event_handlers: dict[str, EventHandler] = {}
         self.wrapped_listeners: dict[str, list[Listener]] = {}
@@ -104,6 +101,8 @@ class Bot(commands.Bot):
 
         if module_already_loaded:
             raise ModuleAlreadyLoaded(module_path)
+        elif not spec.loader:
+            raise ModuleFailed(f"Loader not found for module {module_path!r}", module=module, spec=spec)
 
         sys.modules[module_path] = module
 
@@ -125,12 +124,19 @@ class Bot(commands.Bot):
             raise ModuleNotFound(f"Failed to unload module {module_path!r}", module=module, spec=spec)
 
     def reload_module(self, module_path: str):
-        spec = importlib.util.find_spec(module_path)
-        module = importlib.util.module_from_spec(spec)
+        spec_found = importlib.util.find_spec(module_path)
+
+        if not spec_found:
+            raise ModuleNotFound(f"Could not find module {module_path!r}")
+
+        module_found = importlib.util.module_from_spec(spec_found)
+
+        if not module_found:
+            raise ModuleNotFound(f"Could not find module {module_path!r}")
 
         try:
-            self.unload_module(module_path, spec=spec, module=module)
-            self.load_module(module_path, spec=spec, module=module)
+            self.unload_module(module_path, spec=spec_found, module=module_found)
+            self.load_module(module_path, spec=spec_found, module=module_found)
         except ModuleError as error:
             self.on_module_error(error)
 
@@ -196,7 +202,7 @@ class Bot(commands.Bot):
         super().add_listener(abstract_bot_parameter, name)
 
     def _find_wrapped_listener(self, listener: Listener, name: str) -> Listener | None:
-        wrapped_listeners = self.wrapped_listeners.get(name)
+        wrapped_listeners = self.wrapped_listeners.get(name) or []
 
         for wrapped_listener in wrapped_listeners:
             if listener == wrapped_listener.__original_listener__:
@@ -225,7 +231,7 @@ class Bot(commands.Bot):
         try:
             await super().unload_extension(extension)
 
-            event_handler_found = self.event_handlers.get(extension, False)
+            event_handler_found = self.event_handlers.get(extension, None)
 
             if event_handler_found:
                 self.remove_event(event_handler_found)

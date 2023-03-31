@@ -5,7 +5,7 @@ import typing
 import discord
 
 if typing.TYPE_CHECKING:
-    from src import Bot
+    from src.bot import Bot
 
 
 async def on_message(bot: Bot, message: discord.Message):

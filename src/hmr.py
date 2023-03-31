@@ -13,6 +13,8 @@ from discord.ext import commands
 from src.errors import ModuleError, ModuleFailed
 
 if typing.TYPE_CHECKING:
+    import importlib.util
+
     from src.bot import Bot
 
 CWD = os.getcwd()
@@ -27,7 +29,7 @@ def path_to_mod(filepath: str) -> str:
     return filepath.replace("/", ".").replace(".py", "")
 
 
-async def process_change(bot: Bot, change_type: watchfiles.FileChange, filepath: str):
+async def process_change(bot: Bot, change_type: watchfiles.Change, filepath: str):
     if change_type is not watchfiles.Change.modified or not filepath.endswith(".py"):
         return
 
@@ -39,19 +41,28 @@ async def process_change(bot: Bot, change_type: watchfiles.FileChange, filepath:
         with contextlib.suppress(commands.ExtensionError):
             return await bot.reload_extension(as_module_path)
 
-    spec: ModuleSpec = importlib.util.find_spec(as_module_path)
-    module: types.ModuleType = importlib.util.module_from_spec(spec)
+    spec_found = importlib.util.find_spec(as_module_path)
+
+    if not spec_found:
+        return
+
+    module_found: types.ModuleType = importlib.util.module_from_spec(spec_found)
+
+    if not module_found:
+        return
 
     try:
-        bot.load_module(as_module_path, spec=spec, module=module)
+        bot.load_module(as_module_path, spec=spec_found, module=module_found)
     except ModuleFailed:
         return
 
-    base_bot_class_found = getattr(module, "Bot", False)
+    base_bot_class_found = getattr(module_found, "Bot", None)
 
     if not base_bot_class_found:
-        with contextlib.suppress(ModuleError):
+        try:
             return bot.reload_module(as_module_path)
+        except ImportError:
+            return None
 
     # this attribute stores the old class, so we swap the reference with the
     # updated class and attribute/method lookups dynamically sync by default
