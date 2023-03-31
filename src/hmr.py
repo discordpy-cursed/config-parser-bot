@@ -5,7 +5,7 @@ import importlib
 import os
 import types
 import typing
-from importlib.machinery import Spec
+from importlib.machinery import ModuleSpec
 
 import watchfiles
 from discord.ext import commands
@@ -39,7 +39,7 @@ async def process_change(bot: Bot, change_type: watchfiles.FileChange, filepath:
         with contextlib.suppress(commands.ExtensionError):
             return await bot.reload_extension(as_module_path)
 
-    spec: Spec = importlib.util.find_spec(as_module_path)
+    spec: ModuleSpec = importlib.util.find_spec(as_module_path)
     module: types.ModuleType = importlib.util.module_from_spec(spec)
 
     try:
