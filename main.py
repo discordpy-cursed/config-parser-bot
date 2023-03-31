@@ -10,10 +10,14 @@ from src.bot import Bot
 
 
 async def main():
-    token = os.environ['TOKEN']
+    token = os.environ.get("TOKEN", "")
+    environment = os.environ.get("ENV", "development")
 
     async with Bot() as bot:
-        await asyncio.gather(bot.start(token), hmr.start(bot))
+        if environment == "development":
+            await asyncio.gather(bot.start(token), hmr.start(bot))
+        else:
+            await bot.start(token)
 
 
 if __name__ == '__main__':
