@@ -261,25 +261,9 @@ class Bot(commands.Bot):
 
         await self.process_config()
 
-        # self.loop.create_task(self.hmr_request_listener())
-
     async def process_config(self):
         if not self.config:
             return
 
         for name, payload in self.config.command.items():
             await self.handle_extension_as_command(name=name, payload=payload)
-
-    # async def setup_hmr(self, request_queue: asyncio.LifoQueue):
-    #     bot = self
-    #     self.queue = request_queue
-    #     self.hot_module_reloader = HotModuleReloader(bot, request_queue)
-
-    #     self.hot_module_reloader.start()
-    #     self.hmr_request_listener.start()
-
-    # async def teardown_hmr(self):
-    #     self.hmr_request_listener.stop()
-    #     self.hot_module_reloader.stop()
-
-    #     self.hot_module_reloader = None
